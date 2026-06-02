@@ -1,0 +1,76 @@
+flowchart TD
+    subgraph FE[Frontend]
+        User([Клиент / PWA])
+        Printer([Печатник])
+        Cashier([Кассир])
+        Admin([Администратор])
+    end
+
+    GW[API Gateway]
+
+    subgraph SVC[Сервисы]
+        IDP[Identity]
+        DOC[Document]
+        ED[Editor]
+        TPL[Template]
+        STO[Storage]
+        PO[Print Order]
+        SH[Shop]
+        PAY[Payment]
+        NT[Notification]
+        BI[Admin / BI]
+        AUD[Audit]
+    end
+
+    subgraph DB[Хранилища]
+        PG_ID[(PG: Identity)]
+        PG_DOC[(PG: Document)]
+        PG_TPL[(PG: Template)]
+        PG_PO[(PG: Print Order)]
+        PG_SH[(PG: Shop)]
+        PG_PAY[(PG: Payment)]
+        REDIS_ED[(Redis: Editor state)]
+        REDIS_CACHE[(Redis: cache)]
+        S3[(S3 Object Storage)]
+        CH[(ClickHouse: BI + Audit)]
+        S3_WORM[(S3 WORM: Audit archive)]
+        KAFKA[[Kafka]]
+    end
+
+    User --> GW
+    User -.WebSocket.-> ED
+    Printer --> GW
+    Cashier --> GW
+    Admin --> GW
+
+    GW --> IDP
+    GW --> DOC
+    GW --> TPL
+    GW --> PO
+    GW --> SH
+    GW --> PAY
+    GW --> BI
+
+    IDP --> PG_ID
+    DOC --> PG_DOC
+    DOC --> STO
+    ED --> REDIS_ED
+    ED -.outbox.-> KAFKA
+    TPL --> PG_TPL
+    STO --> S3
+    PO --> PG_PO
+    SH --> PG_SH
+    SH --> REDIS_CACHE
+    PAY --> PG_PAY
+
+    KAFKA --> NT
+    KAFKA --> AUD
+    KAFKA --> BI
+
+    AUD --> CH
+    AUD --> S3_WORM
+    BI --> CH
+
+    PG_DOC -. CDC .-> CH
+    PG_PO -. CDC .-> CH
+    PG_PAY -. CDC .-> CH

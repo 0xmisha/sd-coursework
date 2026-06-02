@@ -1,0 +1,92 @@
+flowchart TB
+    User([Клиент / PWA / тонкий клиент])
+    DNS[Geo DNS]
+    DDOS[Anti-DDoS]
+    CDN[CDN]
+    LB[Load Balancer]
+    WAF[WAF]
+    GW[API Gateway]
+
+    subgraph PLANE[Application plane]
+        direction TB
+        SM[[Service Mesh: mTLS / retry / CB]]
+        IDP[Identity]
+        DOC[Document]
+        ED[Editor]
+        TPL[Template]
+        STO[Storage]
+        PO[Print Order]
+        SH[Shop]
+        PAY[Payment]
+        NT[Notification]
+        BI[Admin / BI]
+        AUD[Audit]
+        SAND[Document Sandbox]
+    end
+
+    subgraph DATA[Data plane]
+        PG[(PostgreSQL кластер: Identity / Document / Template / PO / Shop / Payment)]
+        REDIS[(Redis Cluster: cache + Editor state)]
+        S3[(S3 Object Storage)]
+        S3W[(S3 WORM: audit archive)]
+        CH[(ClickHouse: BI + Audit hot)]
+        KAFKA[[Kafka]]
+    end
+
+    subgraph PLATFORM[Platform / Security]
+        IDPSSO[IdP: Keycloak]
+        HSM[HSM]
+        VAULT[Vault]
+        SIEM[SIEM]
+        OBS[Observability stack]
+        CICD[CI/CD]
+        AV[Antivirus]
+        FF[Feature Flags]
+        SEARCH[OpenSearch FTS]
+        BAK[WAL-G + snapshots]
+    end
+
+    EXT([ОФД / Банк / СБП / Карты / SMS])
+
+    User --> DNS --> DDOS --> CDN --> LB --> WAF --> GW
+    GW --> SM
+    SM -.-> IDP & DOC & ED & TPL & STO & PO & SH & PAY & BI
+
+    IDP --> PG
+    DOC --> PG
+    TPL --> PG
+    STO --> S3
+    DOC --> STO
+    ED --> REDIS
+    ED --> SAND
+    PO --> PG
+    SH --> PG
+    SH --> REDIS
+    PAY --> PG
+
+    PO -.-> KAFKA
+    DOC -.-> KAFKA
+    PAY -.-> KAFKA
+    IDP -.-> KAFKA
+    KAFKA --> NT
+    KAFKA --> AUD
+    KAFKA --> BI
+    AUD --> CH
+    AUD --> S3W
+    BI --> CH
+    PG -. CDC .-> CH
+
+    IDP --> IDPSSO
+    PAY --> HSM
+    STO --> AV
+    PAY --> EXT
+    NT --> EXT
+
+    OBS -.scrape.-> PLANE
+    SIEM -.feed.-> AUD
+    BAK -.PITR.-> PG
+    BAK -.snapshot.-> S3
+    CICD -.deploy.-> PLANE
+    FF -.config.-> PLANE
+    VAULT -.secrets.-> PLANE
+    SEARCH -.index.-> DOC

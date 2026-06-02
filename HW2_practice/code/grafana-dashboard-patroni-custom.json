@@ -1,0 +1,205 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": null,
+    "title": "Patroni Cluster (HW2)",
+    "tags": ["patroni", "hw2"],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "version": 1,
+    "refresh": "5s",
+    "time": { "from": "now-30m", "to": "now" },
+    "panels": [
+      {
+        "id": 1,
+        "type": "stat",
+        "title": "Кто лидер",
+        "datasource": { "type": "prometheus", "uid": "WrJLwSxvk" },
+        "gridPos": { "x": 0, "y": 0, "w": 8, "h": 6 },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name" },
+        "fieldConfig": { "defaults": { "mappings": [{ "type": "value", "options": { "0": { "text": "no" }, "1": { "text": "LEADER" } } }] } },
+        "targets": [
+          {
+            "expr": "patroni_primary",
+            "legendFormat": "{{name}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "type": "stat",
+        "title": "Реплики (1=replica)",
+        "datasource": { "type": "prometheus", "uid": "WrJLwSxvk" },
+        "gridPos": { "x": 8, "y": 0, "w": 8, "h": 6 },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name" },
+        "targets": [
+          {
+            "expr": "patroni_replica",
+            "legendFormat": "{{name}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "type": "stat",
+        "title": "Timeline (TL)",
+        "datasource": { "type": "prometheus", "uid": "WrJLwSxvk" },
+        "gridPos": { "x": 16, "y": 0, "w": 8, "h": 6 },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name" },
+        "targets": [
+          {
+            "expr": "patroni_postgres_timeline",
+            "legendFormat": "{{name}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "type": "timeseries",
+        "title": "patroni_postgres_running (1=PG живой)",
+        "datasource": { "type": "prometheus", "uid": "WrJLwSxvk" },
+        "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "patroni_postgres_running",
+            "legendFormat": "{{name}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "type": "timeseries",
+        "title": "patroni_primary / patroni_replica по времени",
+        "datasource": { "type": "prometheus", "uid": "WrJLwSxvk" },
+        "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "patroni_primary",
+            "legendFormat": "primary {{name}}",
+            "refId": "A"
+          },
+          {
+            "expr": "patroni_replica",
+            "legendFormat": "replica {{name}}",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "type": "timeseries",
+        "title": "Patroni timeline (рост = failover)",
+        "datasource": { "type": "prometheus", "uid": "WrJLwSxvk" },
+        "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "patroni_postgres_timeline",
+            "legendFormat": "{{name}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "type": "timeseries",
+        "title": "DCS last seen lag (сек) и xlog location lag",
+        "datasource": { "type": "prometheus", "uid": "WrJLwSxvk" },
+        "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "time() - patroni_dcs_last_seen",
+            "legendFormat": "dcs lag s ({{name}})",
+            "refId": "A"
+          },
+          {
+            "expr": "patroni_xlog_replayed_location - on(scope) group_left() max by (scope) (patroni_xlog_location)",
+            "legendFormat": "wal lag bytes ({{name}})",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "type": "timeseries",
+        "title": "PostgreSQL up (от postgres_exporter через HAProxy)",
+        "datasource": { "type": "prometheus", "uid": "WrJLwSxvk" },
+        "gridPos": { "x": 0, "y": 22, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "pg_up",
+            "legendFormat": "pg_up",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "type": "timeseries",
+        "title": "Транзакции/сек (commit + rollback)",
+        "datasource": { "type": "prometheus", "uid": "WrJLwSxvk" },
+        "gridPos": { "x": 12, "y": 22, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(pg_stat_database_xact_commit{datname=\"postgres\"}[1m]))",
+            "legendFormat": "commits/s",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(pg_stat_database_xact_rollback{datname=\"postgres\"}[1m]))",
+            "legendFormat": "rollbacks/s",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "type": "timeseries",
+        "title": "INSERT/UPDATE/DELETE rate (postgres db)",
+        "datasource": { "type": "prometheus", "uid": "WrJLwSxvk" },
+        "gridPos": { "x": 0, "y": 30, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(pg_stat_database_tup_inserted{datname=\"postgres\"}[1m]))",
+            "legendFormat": "inserts/s",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(pg_stat_database_tup_updated{datname=\"postgres\"}[1m]))",
+            "legendFormat": "updates/s",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(pg_stat_database_tup_deleted{datname=\"postgres\"}[1m]))",
+            "legendFormat": "deletes/s",
+            "refId": "C"
+          },
+          {
+            "expr": "sum(rate(pg_stat_database_tup_fetched{datname=\"postgres\"}[1m]))",
+            "legendFormat": "fetches/s",
+            "refId": "D"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "type": "timeseries",
+        "title": "Active connections",
+        "datasource": { "type": "prometheus", "uid": "WrJLwSxvk" },
+        "gridPos": { "x": 12, "y": 30, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "pg_stat_database_numbackends{datname=\"postgres\"}",
+            "legendFormat": "backends",
+            "refId": "A"
+          }
+        ]
+      }
+    ]
+  },
+  "overwrite": true,
+  "folderId": 0
+}

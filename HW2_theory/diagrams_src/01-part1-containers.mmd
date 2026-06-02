@@ -1,0 +1,52 @@
+flowchart TD
+    User([Клиент / PWA])
+    Printer([Печатник, тонкий клиент])
+    Cashier([Кассир, POS])
+    Admin([Администратор сети])
+
+    GW[API Gateway]
+    IDP[Identity Service]
+    DOC[Document Service]
+    ED[Editor Service]
+    TPL[Template Service]
+    STO[Storage Service]
+    PO[Print Order Service]
+    SH[Shop Service]
+    PAY[Payment Service]
+    NT[Notification Service]
+    BI[Admin / BI Service]
+    AUD[Audit Service]
+
+    User -->|sync HTTPS| GW
+    User -.->|sync WebSocket| ED
+    Printer --> GW
+    Cashier --> GW
+    Admin --> GW
+
+    GW -->|sync gRPC| IDP
+    GW --> DOC
+    GW --> TPL
+    GW --> PO
+    GW --> SH
+    GW --> PAY
+    GW --> BI
+
+    ED -->|async Kafka| DOC
+    ED -->|async Kafka| STO
+    DOC --> STO
+    TPL --> STO
+    PO -->|sync gRPC| SH
+    PO -->|sync gRPC| PAY
+    PO -.->|async Kafka| Printer
+    PAY -->|sync HTTPS| OFD([ОФД])
+    PAY -.->|sync HTTPS| BANK([Банк / СБП])
+
+    DOC -.->|async Kafka| NT
+    PO -.->|async Kafka| NT
+    PAY -.->|async Kafka| NT
+    NT -.->|email / SMS / push| User
+
+    DOC -.->|async Kafka| AUD
+    PO -.->|async Kafka| AUD
+    PAY -.->|async Kafka| AUD
+    IDP -.->|async Kafka| AUD
